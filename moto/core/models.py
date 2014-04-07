@@ -5,6 +5,7 @@ import inspect
 import re
 
 from httpretty import HTTPretty
+from httpretty import core as httpretty_core
 from .responses import metadata_response
 from .utils import convert_regex_to_flask_path
 
@@ -29,6 +30,7 @@ class MockAWS(object):
     def __exit__(self, *args):
         self.stop()
 
+
     def start(self):
         self.__class__.nested_count += 1
         for backend in self.backends.values():
@@ -39,7 +41,11 @@ class MockAWS(object):
 
         for method in HTTPretty.METHODS:
             backend = list(self.backends.values())[0]
-            for key, value in backend.urls.items():
+            for key, value in backend.urls.iteritems():
+                m = re.search(':(?P<port>[0-9]+)[^:]*$', key)
+                if m and 'port' in m.groupdict():
+                    httpretty_core.POTENTIAL_HTTP_PORTS.add(
+                        int(m.groupdict()['port']))
                 HTTPretty.register_uri(
                     method=method,
                     uri=re.compile(key),
